@@ -166,3 +166,94 @@ set.seed(42)
 samples <- diff_sampling(10000)
 var(samples)
 ```
+
+
+## Appendix
+
+```{r}
+# Question 1
+f <- function(x) {
+  if (x < -1 | x > 1){
+    return(0)
+  }
+  else if (-1 <= x & x <= 0) {
+    return(x+1)
+  }
+  else {
+    return (1-x)
+  }
+}
+
+envelope <- function(x) {
+  if (x < -1 || x > 1){
+    return(0)
+  }
+  else{
+    return(1)
+  }
+}
+
+
+x <- seq(-2,2,0.01)
+y <- sapply(x, f)
+plot(x, y, type="l")
+y_env <-  sapply(x, envelope)
+lines(x, y_env, col="red")
+
+
+rejection_sampling <- function(n) {
+  samples <- numeric(n)
+  c <- 1
+  while(c < n) {
+    sample_Y <- runif(1, -1 ,1)
+    sample_U <- runif(1, 0, 1)
+    
+    # check for U <= f(Y) / e(Y), e(Y) = 1
+    if(sample_U <= f(sample_Y)){ 
+      samples[c] <- sample_Y
+      c <- c + 1 
+    }
+  }
+  return(samples)
+}
+
+set.seed(42)  
+samples <- rejection_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Rejection Sampling", xlab = "x")
+lines(x, y, col="red")
+
+
+composition_sampling <- function(n) {
+  u <- runif(n)
+  criterion <- runif(n)
+  
+  samples <- ifelse(criterion < 0.5, 1-sqrt(1-u), -(1-sqrt(1-u)))
+  
+  return(samples)
+}
+
+set.seed(42)  
+samples <- composition_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Composition Sampling", xlab = "x")
+lines(x, y, col="red")
+
+diff_sampling <- function(n){
+  u1 <- runif(n)
+  u2 <- runif(n)
+  
+  samples <- u1 - u2
+  
+  return(samples)
+}
+
+set.seed(42)  
+samples <- diff_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples using Difference of Uniforms", xlab = "x")
+lines(x, y, col="red")
+
+set.seed(42)
+samples <- diff_sampling(10000)
+var(samples)
+
+# Question 2
+```
