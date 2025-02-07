@@ -1,0 +1,168 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+# Report for Computer Lab 3 in Computational Statistics
+
+## Question 1: Sampling algorithms for a triangle distribution
+
+\usepackage{amsmath}
+
+\[
+    f(x)= 
+\begin{cases}
+    0,& \text{if } x < -1 \text{ or } x > 1\\
+    x+1,& \text{if } -1 <= x <= 1\\
+    1-x,& \text{if } 0 <= x <= 1
+\end{cases}
+\]
+
+```{r echo=FALSE}
+f <- function(x) {
+  if (x < -1 | x > 1){
+    return(0)
+  }
+  else if (-1 <= x & x <= 0) {
+    return(x+1)
+  }
+  else {
+    return (1-x)
+  }
+}
+
+```
+
+**
+a. Choose an appropriate and simple envelope e(x) for density and program a random generator for X using rejection sampling. Generate 10000 random variables and plot a histogram. 
+**
+
+As envelope we choose a constant function on the intervall [-1,1]. 
+
+\[
+    e(x)= 
+\begin{cases}
+    1,& \text{if } x >= -1 \text{ or } x <= 1\\
+    0,& \text{otherwise } 
+\end{cases}
+\]
+
+
+```{r echo=FALSE}
+envelope <- function(x) {
+  if (x < -1 || x > 1){
+    return(0)
+  }
+  else{
+    return(1)
+  }
+}
+
+
+x <- seq(-2,2,0.01)
+y <- sapply(x, f)
+plot(x, y, type="l")
+y_env <-  sapply(x, envelope)
+lines(x, y_env, col="red")
+```
+
+
+
+The following function was implemented according to the algorithm in the book (Givens). It allows the constant \alpha to be <= 1. We chose \alpha = 1 for simplicity, therefore are g(x) and e(x) equal. It still fulfills the condition g(x)/\alpha >= f(x).
+
+```{r}
+rejection_sampling <- function(n) {
+  samples <- numeric(n)
+  c <- 1
+  while(c < n) {
+    sample_Y <- runif(1, -1 ,1)
+    sample_U <- runif(1, 0, 1)
+    
+    # check for U <= f(Y) / e(Y), e(Y) = 1
+    if(sample_U <= f(sample_Y)){ 
+      samples[c] <- sample_Y
+      c <- c + 1 
+    }
+  }
+  return(samples)
+}
+
+```
+
+The plot of the histogram of a sample of 10,000 random variables using rejection sampling shows a triangle similar to the original function: 
+
+```{r echo=FALSE}
+set.seed(42)  
+samples <- rejection_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Rejection Sampling", xlab = "x")
+lines(x, y, col="red")
+```
+
+**
+b. In Lecture 3, another triangle distribution was generated using the inverse cumulative distribution function method; see pages 9-10 of the lecture notes. Let Y be a random variable following this distribution. A random variable −Y has a triangle distribution in the interval [−1, 0]. Program a random generator for X using composition sampling based on Y and −Y . You can use the code from the lecture to generate Y . Generate 10000 random variables and plot a histogram.
+**
+
+In this approach two random variables are used to sample from f(x). Sampling from the uniform distribution decides for every sample from which distribution it is drawn.
+
+```{r}
+composition_sampling <- function(n) {
+  u <- runif(n)
+  criterion <- runif(n)
+  
+  samples <- ifelse(criterion < 0.5, 1-sqrt(1-u), -(1-sqrt(1-u)))
+  
+  return(samples)
+}
+
+```
+
+```{r echo=FALSE}
+set.seed(42)  
+samples <- composition_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Composition Sampling", xlab = "x")
+lines(x, y, col="red")
+```
+
+The resulting histogram shows a similar shape as the triangle from the original distribution.
+
+**
+c. Sums or differences of two independent uniformly distributed variables can also have some triangle distribution. When U1, U2 are two independent Unif [0, 1]-distributed random variables, U1 − U2 has the same distribution as X. Use this result to program a generator for X. Generate 10000 random variables and plot a histogram.
+**
+
+This function has a simple implementation, as it only returns the difference of two uniform distributions.
+
+```{r}
+diff_sampling <- function(n){
+  u1 <- runif(n)
+  u2 <- runif(n)
+  
+  samples <- u1 - u2
+  
+  return(samples)
+}
+```
+
+```{r echo=FALSE}
+set.seed(42)  
+samples <- diff_sampling(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples using Difference of Uniforms", xlab = "x")
+lines(x, y, col="red")
+```
+
+Using the function to sample from X results in a histogram with a similar shape to the original distribution.
+
+**
+d. Consider the amount of programming for the three methods and compare the number of random value generation and other time consuming operations needed by the methods to judge expected running time. Which of the three methods do you prefer if you had to generate samples of X? Use data from one method to determine the variance of X.
+**
+
+The programming effort is the lowest for diff_sampling(), as it simply returns the difference of two vectors sampled from two independent uniform distributions. The complexity that composition_sampling() adds is only the ifelse-clause to decide from which distribution to sample. Rejection sampling requires the most effort, as a while-loop is required. It cannot be solved with a vectorized approach, as it is not known upfront how many samples will be rejected. Hence the lengths of vectors cannot be predefined.  
+
+The rejection of samples also makes this method the slowest. We generate a random value twice for each sample in all three algorithms but for rejection sampling we do not know how often we have to run the loop until a sample is accepted. Additionally we have to use a while loop, which is slower than working on vectors. Composition sampling and sampling from the difference of two uniform distributions have the same amount of random value generations but calculating the square root in composition sampling is a bit more costly. Because of the lower computational cost and the simplicity of the code we would choose diff_sampling() to generate samples of X.  
+
+
+Using the latter function to get 10,000 samples of X gives the following variance:
+```{r echo=FALSE}
+set.seed(42)
+samples <- diff_sampling(10000)
+var(samples)
+```

@@ -1,4 +1,3 @@
-# function
 
 f <- function(x) {
   if (x < -1 | x > 1){
@@ -53,6 +52,14 @@ rejection_sampling <- function(n) {
   return(samples)
 }
 
+tmp_rej <- function(n){
+  samples <- numeric(n)
+  sample_Y <- runif(n,-1,1)
+  sample_U <- runif(n,0,1)
+  
+  
+}
+
 set.seed(42)  
 samples <- rejection_sampling(10000)
 hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Rejection Sampling", xlab = "x")
@@ -79,11 +86,27 @@ composition_sampling <- function(n) {
   return(samples)
 }
 
+tmp <- function(n) {
+  samples <- numeric(n)
+  c <- 1
+  
+  u <- runif(n)
+  criterion <- runif(n)
+  
+  samples <- ifelse(criterion < 0.5, 1-sqrt(1-u), -(1-sqrt(1-u)))
+  return(samples)
+}
+
 set.seed(42)  
 samples <- composition_sampling(10000)
 hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Composition Sampling", xlab = "x")
 lines(x, y, col="red")
 
+
+set.seed(42)  
+samples <- tmp(10000)
+hist(samples, breaks=50,probability = TRUE, main = "Histogram of Samples with Composition Sampling", xlab = "x")
+lines(x, y, col="red")
 
 # c. two uniformly distributions
 substract_sampling <- function(n){
