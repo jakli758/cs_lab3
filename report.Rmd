@@ -167,9 +167,110 @@ var(samples)
 ```
 
 
-## Appendix
+
+
+## Question 2: Bivariate normal and normal mixture distribtution
+**
+a. Generate a two dimensional random vector $\begin{pmatrix}x_1 \\ x_2\end{pmatrix}$ that has a two-dimensional normal distribution with mean vector $\begin{pmatrix}0 \\ 0 \end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.6 & 0 \\ 0 & 0.6 \end{pmatrix}$ using the Box-Muller method and using only *runif* as random number generator. 
+<br> 
+**
+
+
+Since we are asked to generate a two random vector from a two dimensiona normal distribution with the given mean vector and covariance matrix, we simply sample from the uniform distribution and perform the Box-Muller transformation. To achieve the desired covariance matrix, we scale the random vector with $\sqrt(0.6)$.
+```{r}
+box_muller <- function(input_vec){
+  u_1 <- input_vec[1]
+  u_2 <- input_vec[2]
+  z_1 <- sqrt(-2*log(u_1))*cos(2*pi*u_2)
+  z_2 <- sqrt(-2*log(u_1))*sin(2*pi*u_2)
+  return(c(z_1, z_2))
+}
+
+univariate_vector <- function(){
+  return(c(runif(1), runif(1))) 
+}
+
+start_time <- proc.time()
+for(i in (1:10000000)){
+  uniform_vec <- univariate_vector()
+  normal_vec <- box_muller(uniform_vec) * sqrt(0.6)
+}
+end_time <- proc.time()
+
+print(end_time - start_time)
+```
+
+**
+b. Generate again 10000000 random vectors with this distribution, but now using either the one-dimensional function *rnorm* or the package *mvtnorm*. Explain why you have chosen to generate it the way you did. Measure the computation time and compare it to your result from a) 
+**
+
+We decided to use *rnorm* as the covariance matrix is diagonal, hence the different random variables are uncorrelated and thus we do not need any dependency structure which *mvtnorm* utilizes.
+```{r}
+start_time <- proc.time()
+
+n <- 10000000  # Number of vectors
+
+# Generate independent normal samples with mean 0 and variance 0.6
+x_1 <- rnorm(n, mean = 0, sd = sqrt(0.6))
+x_2 <- rnorm(n, mean = 0, sd = sqrt(0.6))
+
+end_time <- proc.time()
+
+print(end_time - start_time)
+```
+
+As we can observe, the using *rnorm* instead of *runif* and then transforming using Box-Muller is many magnitudes faster. This is because rnorm utilizes vectorization, which is very efficient in R, especially when compared to the loop approach in a). 
+<br>
+
+**
+c) Now, we consider the density of the bivariate normal mixture in Lecture 2. There, observations follow with $50%$ probability one of the following two distributions:
+- normal distribution with mean vector $\begin{pmatrix}0 \\ 0\end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.6 & 0 \\ 0 & 0.6 \end{pmatrix}$ 
+- normal distribution with mean vector $\begin{pmatrix}1.5 \\ 1.2 \end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.5 & 0 \\ 0 & 0.5\end{pmatrix}$ 
+**
 
 ```{r}
+set.seed(42)
+n <- 1000
+
+# Define mean
+mu1 <- c(0, 0)
+mu2 <- c(1.5, 1.2)
+
+# Define covariance matrices
+sigma1 <- matrix(c(0.6, 0, 0, 0.6), nrow = 2)
+sigma2 <- matrix(c(0.5, 0, 0, 0.5), nrow = 2)
+
+# Randomly assign samples to components
+component <- rbinom(n, size = 1, prob = 0.5)
+
+# Generate samples based on the assigned component
+samples <- matrix(0, nrow = n, ncol = 2)
+for (i in 1:n) {
+  if (component[i] == 0) {
+    samples[i, 1] <- rnorm(1, mean = mu1[1], sd = sqrt(sigma1[1,1]))
+    samples[i, 2] <- rnorm(1, mean = mu1[2], sd = sqrt(sigma1[2,2]))
+  } else {
+    samples[i, 1] <- rnorm(1, mean = mu2[1], sd = sqrt(sigma2[1,1]))
+    samples[i, 2] <- rnorm(1, mean = mu2[2], sd = sqrt(sigma2[2,2]))
+  }
+}
+
+# Plot the generated samples
+plot(samples, col = ifelse(component == 0, "blue", "red"), pch = 16,
+     main = "Scatter Plot of Bivariate Normal Mixture",
+     xlab = expression(x[1]), ylab = expression(x[2]))
+legend("topright", legend = c("Component 1 (0,0)", "Component 2 (1.5,1.2)"), 
+       col = c("blue", "red"), pch = 16)
+```
+The plot looks as one would expect, the blue dots cluster around the coordinates $(0,0)$ which is determined by the mean-vector. The same is true for the red data points, which cluster around $1.5$ for $x_1$ and $1.2$ for $x_2$. According to the empirical rule $95%$ of random samples from a normal distribution fall within 2 standard deviations of the mean.
+Going off visuals alone, this seems to be true for both distributions as well. Lastly, while it might appear that there is an imbalance between the blue dots and red dots, this is misleading as the blue distribution has a higher standard deviation causing the blue samples to be more spread out, having less overlap and thus appearing to be more frequent than the red samples.
+
+
+
+
+## Appendix
+
+```{r eval=FALSE}
 # Question 1
 f <- function(x) {
   if (x < -1 | x > 1){
@@ -253,14 +354,9 @@ lines(x, y, col="red")
 set.seed(42)
 samples <- diff_sampling(10000)
 var(samples)
-```
 
-## Question 2: Bivariate normal and normal mixture distribtution
-a) Generate a two dimensional random vector $\begin{pmatrix}x_1 \\ x_2\end{pmatrix}$ that has a two-dimensional normal distribution with mean vector $\begin{pmatrix}0 \\ 0 \end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.6 & 0 \\ 0 & 0.6 \end{pmatrix}$ using the Box-Muller method and using only *runif* as random number generator. 
-<br> 
+# Question 2:
 
-Since we are asked to generate a two random vector from a two dimensiona normal distribution with the given mean vector and covariance matrix, we simply sample from the uniform distribution and perform the Box-Muller transformation. To achieve the desired covariance matrix, we scale the random vector with $\sqrt(0.6)$.
-```{r}
 box_muller <- function(input_vec){
   u_1 <- input_vec[1]
   u_2 <- input_vec[2]
@@ -274,43 +370,35 @@ univariate_vector <- function(){
 }
 
 start_time <- proc.time()
-for(i in (1:10000000)){
-  uniform_vec <- univariate_vector()
-  normal_vec <- box_muller(uniform_vec) * sqrt(0.6)
+for(i in (1:100)){
+  uniform_vec <- univariate_vector() * 0.6
+  normal_vec <- box_muller(uniform_vec)
 }
 end_time <- proc.time()
 
 print(end_time - start_time)
-```
 
-b) Generate again 10000000 random vectors with this distribution, but now using either the one-dimensional function *rnorm* or the package *mvtnorm*. Explain why you have chosen to generate it the way you did. Measure the computation time and compare it to your result from a) 
-
-We decided to use *rnorm* as the covariance matrix is diagonal, hence the different random variables are uncorrelated and thus we do not need any dependency structure which *mvtnorm* utilizes.
-```{r}
 start_time <- proc.time()
 
 n <- 10000000  # Number of vectors
 
+
+x_1 <- rnorm(0.6, mean = 0, sd = sqrt(0.6))
+x_2 <- rnorm(0.6, mean = 0, sd = sqrt(0.6))
+
 # Generate independent normal samples with mean 0 and variance 0.6
-x_1 <- rnorm(n, mean = 0, sd = sqrt(0.6))
-x_2 <- rnorm(n, mean = 0, sd = sqrt(0.6))
+
 
 end_time <- proc.time()
 
 print(end_time - start_time)
-```
 
-As we can observe, the using *rnorm* instead of *runif* and then transforming using Box-Muller is many magnitudes faster. This is because rnorm utilizes vectorization, which is very efficient in R, especially when compared to the loop approach in a). 
-<br>
-c) Now, we consider the density of the bivariate normal mixture in Lecture 2. There, observations follow with $50%$ probability one of the following two distributions:
-- normal distribution with mean vector $\begin{pmatrix}0 \\ 0\end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.6 & 0 \\ 0 & 0.6 \end{pmatrix}$ 
-- normal distribution with mean vector $\begin{pmatrix}1.5 \\ 1.2 \end{pmatrix}$ and covariance matrix $\begin{pmatrix}0.5 & 0 \\ 0 & 0.5\end{pmatrix}$ 
+library(mvtnorm)  # For multivariate normal sampling
+set.seed(42)      # For reproducibility
 
-```{r}
-set.seed(42)
-n <- 1000
+n <- 1000  # Number of samples
 
-# Define mean
+# Define means
 mu1 <- c(0, 0)
 mu2 <- c(1.5, 1.2)
 
@@ -318,7 +406,7 @@ mu2 <- c(1.5, 1.2)
 sigma1 <- matrix(c(0.6, 0, 0, 0.6), nrow = 2)
 sigma2 <- matrix(c(0.5, 0, 0, 0.5), nrow = 2)
 
-# Randomly assign samples to components
+# Randomly assign samples to one of the two distributions (50% probability)
 component <- rbinom(n, size = 1, prob = 0.5)
 
 # Generate samples based on the assigned component
@@ -330,6 +418,7 @@ for (i in 1:n) {
   } else {
     samples[i, 1] <- rnorm(1, mean = mu2[1], sd = sqrt(sigma2[1,1]))
     samples[i, 2] <- rnorm(1, mean = mu2[2], sd = sqrt(sigma2[2,2]))
+    
   }
 }
 
@@ -339,6 +428,5 @@ plot(samples, col = ifelse(component == 0, "blue", "red"), pch = 16,
      xlab = expression(x[1]), ylab = expression(x[2]))
 legend("topright", legend = c("Component 1 (0,0)", "Component 2 (1.5,1.2)"), 
        col = c("blue", "red"), pch = 16)
+
 ```
-The plot looks as one would expect, the blue dots cluster around the coordinates $(0,0)$ which is determined by the mean-vector. The same is true for the red data points, which cluster around $1.5$ for $x_1$ and $1.2$ for $x_2$. According to the empirical rule $95%$ of random samples from a normal distribution fall within 2 standard deviations of the mean.
-Going off visuals alone, this seems to be true for both distributions as well. Lastly, while it might appear that there is an imbalance between the blue dots and red dots, this is misleading as the blue distribution has a higher standard deviation causing the blue samples to be more spread out, having less overlap and thus appearing to be more frequent than the red samples.
