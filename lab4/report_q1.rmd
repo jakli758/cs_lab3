@@ -178,7 +178,6 @@ Therefore, the gamma distribution would be our choice for the proposal distribut
 
 
 ```{r echo=FALSE}
-# Estimate E(X) using the samples from each part
 estimate_expectation <- function(samples) {
   mean(samples)
 }
@@ -202,3 +201,115 @@ $$
 Matching this to the target function $f(x)$ we can derive that $\alpha = 5 + 1 = 6$ and $\beta = 1$.  With the result $\Gamma(6) = (6-1)! = 120$ we get the required form.  
 
 The expected value of a gamma distribution is defined as $\frac{\alpha}{\beta}$. Therefore $E(X)=\frac{6}{1}=6$. Contrary to expectations, the mean from part a is the closest.
+
+
+## Appendix
+
+```{r eval=FALSE}
+f <- function(x){
+  if (x > 0){
+    return (120*x^5*exp(-x))
+  }
+  else{
+    stop("Function undefined for x <= 0.")
+  }
+}
+x <- seq(1,10,0.01)
+x_app <- sapply(x,f)
+plot(x, x_app, main = "Target function")
+
+set.seed(42)
+
+metropolis_normal <- function(n_iter = 10000, start = 1, proposal_sd = 0.1) {
+  x <- numeric(n_iter)
+  x[1] <- start
+  accept <- 0
+  
+  for (t in 2:n_iter) {
+    proposal <- rnorm(1, mean = x[t - 1], sd = proposal_sd)
+    
+    # f undefined for x <= 0
+    if (proposal > 0) { 
+      rate <- min(1, f(proposal) / f(x[t - 1]))
+      if (runif(1) < rate) {
+        x[t] <- proposal
+        accept <- accept + 1
+      } else {
+        x[t] <- x[t - 1]
+      }
+    } else {
+      x[t] <- x[t - 1]
+    }
+  }
+  
+  return(list(chain = x, acceptance_rate = accept / n_iter))
+}
+
+result_a <- metropolis_normal(n_iter=10000)
+samples_a <- result_a$chain
+acceptance_rate_a <- result_a$acceptance_rate
+plot(samples_a, type = "l", main = "Trace Plot (Part a)", xlab = "Iteration", ylab = "X_t")
+hist(samples_a, probability = TRUE, breaks = 50, main = "Histogram of Samples (Part a)", xlab = "X_t")
+
+metropolis_chisq <- function(n_iter = 10000, start = 1) {
+  x <- numeric(n_iter)
+  x[1] <- start
+  accept <- 0
+  
+  for (t in 2:n_iter) {
+    proposal <- rchisq(1, floor(x[t - 1] + 1))
+    rate <- min(1, f(proposal) / f(x[t - 1]))
+    if (runif(1) < rate) {
+      x[t] <- proposal
+      accept <- accept + 1
+    } else {
+      x[t] <- x[t - 1]
+    }
+  }
+  
+  list(samples = x, acceptance_rate = accept / n_iter)
+}
+
+result_b <- metropolis_chisq()
+samples_b <- result_b$samples
+acceptance_rate_b <- result_b$acceptance_rate
+
+plot(samples_b, type = "l", main = "Trace Plot (Part b)", xlab = "Iteration", ylab = "X_t")
+hist(samples_b, probability = TRUE, breaks = 50, main = "Histogram of Samples (Part b)", xlab = "X_t")
+
+metropolis_gamma <- function(n_iter = 10000, start = 1, alpha = 3, beta = 1) {
+  x <- numeric(n_iter)
+  x[1] <- start
+  accept <- 0
+  
+  for (t in 2:n_iter) {
+    proposal <- rgamma(1, shape = alpha, rate = beta)
+    rate <- min(1, f(proposal) / f(x[t - 1]))
+    if (runif(1) < rate) {
+      x[t] <- proposal
+      accept <- accept + 1
+    } else {
+      x[t] <- x[t - 1]
+    }
+  }
+  
+  list(samples = x, acceptance_rate = accept / n_iter)
+}
+
+result_c <- metropolis_gamma()
+samples_c <- result_c$samples
+acceptance_rate_c <- result_c$acceptance_rate
+
+plot(samples_c, type = "l", main = "Trace Plot (Part c)", xlab = "Iteration", ylab = "X_t")
+hist(samples_c, probability = TRUE, breaks = 50, main = "Histogram of Samples (Part c)", xlab = "X_t")
+
+
+
+estimate_expectation <- function(samples) {
+  mean(samples)
+}
+
+cat("Estimated E(X) (Part a):", estimate_expectation(samples_a), "\n")
+cat("Estimated E(X) (Part b):", estimate_expectation(samples_b), "\n")
+cat("Estimated E(X) (Part c):", estimate_expectation(samples_c), "\n")
+```
