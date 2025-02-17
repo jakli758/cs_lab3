@@ -34,7 +34,8 @@ end_time <- proc.time()
 
 print(end_time - start_time)
 
-library(mvtnorm)  # For multivariate normal sampling
+
+
 set.seed(42)      # For reproducibility
 
 n <- 1000  # Number of samples
@@ -59,7 +60,6 @@ for (i in 1:n) {
   } else {
     samples[i, 1] <- rnorm(1, mean = mu2[1], sd = sqrt(sigma2[1,1]))
     samples[i, 2] <- rnorm(1, mean = mu2[2], sd = sqrt(sigma2[2,2]))
-    
   }
 }
 
