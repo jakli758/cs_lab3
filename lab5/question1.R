@@ -1,7 +1,9 @@
 # a. 
 data <- read.table("lab5/kresseertrag.dat", header=FALSE)
 
-model <- lm(V3~V2+I(V2^2)+I(V2^3), data=data)
+#model <- lm(V3~V2+I(V2^2)+I(V2^3), data=data)
+model <- lm(V3~I(V2^2)+I(V2^3), data=data)
+
 summary(model)
 
 # b. 
